@@ -1,0 +1,34 @@
+/**
+ * manifest
+ * 配置清单 浏览器根据此文件识别扩展
+ * @author fedeoo <zhangfei1[at]staff.sina.com.cn>
+ * @version 1.0
+ */
+{
+    "manifest_version": 2,
+
+    "name": "SinaAd assist",
+    "description": "新浪广告查看插件,高亮时广告样式可能会有不同。",
+    "version": "1.0",
+    "icons": {
+        // "16": "leaf48.png",
+        "48": "leaf48.png"
+    },
+    "permissions": ["contextMenus", "tabs", "http://*/*", "https://*/*", "file:///*/*"],
+    // "browser_action": {
+    //     "default_icon": "leaf48.png",
+    //     "default_popup": "browseraction.html"
+    // },
+    "background": {
+        "scripts": ["background.js"]
+    },
+    "content_scripts": [
+        {
+            "matches": ["http://*.sina.com.cn/*", "https://*.sina.com.cn/*", "file:///*/*"],
+            "js": ["contentscript.js"]
+        }
+    ],
+    // "options_page": "options.html",
+    "web_accessible_resources": ["sinaadAssist.js", "sinaadAssist.css", "artDialog.js", "aero.css", "aero/aero_s.png", "aero/aero_s2.png", 
+        "icons/*", "ZeroClipboard.min.js", "ZeroClipboard.swf"]
+}
