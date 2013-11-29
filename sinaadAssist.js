@@ -4,7 +4,7 @@
     //     init();
     // }
     init();
-    
+    var floatBox;
     function init () {
 
         var adDoms = document.querySelectorAll('.sinaads') || [];
@@ -18,13 +18,28 @@
                 }
             }
         }
+        loadClipboard();
+        addFloatBox();
+
+        document.addEventListener('keydown', function (event) {
+            if (event.keyCode === 27) {//esc
+                cancleHighlightAd();
+            } else if (event.keyCode === 72 && (event.ctrlKey || event.altKey)) {
+                highlightAd();
+            }
+        });
+    }
+    /**
+     * [loadClipboard 载入剪贴板]
+     * @return {[type]} [description]
+     */
+    function loadClipboard() {
         ZeroClipboard.setDefaults({
             moviePath: 'http://d1.sina.com.cn/litong/zhitou/sinaads/zhitou/ZeroClipboard.swf',
             trustedOrigins: [window.location.protocol + "//" + window.location.host]
         });
         window.clip = new ZeroClipboard();
         clip.setHandCursor(true);
-        // clip.glue(document.querySelectorAll('.ad_copy'));
         clip.on("complete", function(client, args) {
             var contentDom = document.createElement('span');
             contentDom.innerHTML = args.text;
@@ -39,49 +54,68 @@
             //再次点击时，如果没有重新setText将不会弹出。下面这行代码处理的就是复制之后鼠标没有移动没有执行getMouseOverHandler中的setText
             clip.setText(args.text);
         });
-        var contentDom = document.createElement('div');
-        contentDom.classList.add('float_box');
-        contentDom.id = 'ad_float_box';
-        contentDom.innerHTML = "<div class='ad_form_group'>"
-                                + "<span></span>"
+    }
+    /**
+     * [addFloatBox 添加浮层并绑定初始事件]
+     */
+    function addFloatBox() {
+        floatBox = document.createElement('div');
+        floatBox.classList.add('float_box');
+        floatBox.id = 'ad_float_box';
+        floatBox.innerHTML = "<div class='ad_form_group'>"
+                                + "<span class='ad_detail'></span>"
                                 + "<button class='ad_copy'>复制t串</button>"
                             + "</div>"
-        // contentDom.innerHTML = "<div class='ad_form_group'>"
-        //                         + "<label>pdps</label>"
-        //                         + "<input type='text'/>"
-        //                         + "<button class='ad_copy'>复制t串</button>"
-        //                     + "</div>"
-        //                     + "<div class='ad_form_group'>"
-        //                         + "<label>monitor</label>"
-        //                         + "<textarea class='ad_form_control'></textarea>"
-        //                     + "</div>";
-        document.body.appendChild(contentDom);
-        contentDom.onmouseover = getFloatBoxMouseOverHandler();
-        contentDom.onmouseout = getFloatBoxMouseOutHandler();
-        clip.glue(contentDom.querySelector('.ad_copy'));
+        document.body.appendChild(floatBox);
+        floatBox.childNodes[0].childNodes[0].onclick = getDetailBtnHandler();
+        floatBox.onmouseover = getFloatBoxMouseOverHandler();
+        floatBox.onmouseout = getFloatBoxMouseOutHandler();
+        clip.glue(floatBox.querySelector('.ad_copy'));
+    }
+    /**
+     * [highlightAd 高亮广告]
+     * @return {[type]} [description]
+     */
+    function highlightAd() {
+        var adDoms = document.querySelectorAll('.sinaads') || [];
+        for (var i = adDoms.length - 1; i >= 0; i--) {
+            var aDom = adDoms[i];
+            aDom.classList.add('ad_highlight');
+        }
+        var bgmask = document.getElementById('bgmask');
+        bgmask && (bgmask.style.display = '');
     }
 
+    /**
+     * [cancleHighlightAd 取消高亮广告]
+     */
+    function cancleHighlightAd() {
+        var adDoms = document.querySelectorAll('.sinaads') || [];
+        for (var i = adDoms.length - 1; i >= 0; i--) {
+            var aDom = adDoms[i];
+            aDom.classList.remove('ad_highlight');
+        }
+        var bgmask = document.getElementById('bgmask');
+        bgmask && (bgmask.style.display = 'none');
+    }
+    /**
+     * [getFloatBoxMouseOverHandler 移入浮层清除定时]
+     */
     function getFloatBoxMouseOverHandler () {
         return function (event) {
             timer && clearTimeout(timer);
-            // var floatBox = document.getElementById('ad_float_box');
-            // floatBox.style.visibility = 'visible';
         };
     }
     function getFloatBoxMouseOutHandler () {
         return function (event) {
-            // setTimeout(function () {
             if (this.contains(event.relatedTarget)) {//不是移到其它子节点
                 return ;
             }
             if (event.relatedTarget && (event.relatedTarget.src || '').indexOf('ZeroClipboard.swf') !== -1) { //移到那个复制按钮上
                 return ;
             }
-            var floatBox = document.getElementById('ad_float_box');
-            // floatBox.style.visibility = 'hidden';
             floatBox.style.left = '-999px';
             floatBox.style.top = '-999px';
-            // }, 1000);
         };
     }
     /**
@@ -103,6 +137,7 @@
                     break;
                 }
             };
+            clip.glue(floatBox.querySelector('.ad_copy'));
             clip.setText(tStr);
             var position = sinaadToolkit.dom.getPosition(this);
             var left = position.left;
@@ -126,7 +161,6 @@
             //     floatBoxTop = top + adHeight;
             //     floatBoxLeft = (viewWidth - floatWidth) / 2;
             // }
-            var floatBox = document.getElementById('ad_float_box');
             floatBox.childNodes[0].childNodes[0].innerText = pdps;
             // floatBox.childNodes[1].childNodes[1].innerText = data.content[0].monitor && data.content[0].monitor.join(' ');
             floatBox.style.left = floatBoxLeft + 'px';
@@ -141,12 +175,57 @@
         return function (event) {
             if (!this.contains(event.relatedTarget)) {
                 timer = setTimeout(function () {
-                    var floatBox = document.getElementById('ad_float_box');
-                    // floatBox.style.visibility = 'hidden';
                     floatBox.style.left = '-999px';
                     floatBox.style.top = '-999px';
                 }, 500);
             }
+        };
+    }
+
+    /**
+     * [getDetailBtnHandler 智投文字链的内容包含多条，需要在新窗口显示]
+     */
+    function getDetailBtnHandler () {
+        return function (event) {
+            var pdps = this.innerText;
+            var data = _sinaadsCacheData[pdps];
+            if (data.type === 'textlink' && data.content.length > 1) {
+                var content = _sinaadsCacheData[pdps].content;
+                var monitor;
+                var tStr = "";
+                var itemHtml = [];
+                for (var i = content.length - 1; i >= 0; i--) {//智投文字链content有多个内容
+                    monitor = content[i].monitor;
+                    for (var j = monitor.length - 1; j >= 0; j--) {
+                        if(0 === monitor[j].indexOf('http://sax.sina.com.cn/click?')) {
+                            var tIndex = monitor[j].indexOf('t=');
+                            tStr = monitor[j].substr(tIndex + 2);
+                            break;
+                        }
+                    };
+                    itemHtml.unshift('<div class="ad_form_group">'
+                            + '<label>' + content[i].src[0] + '</label><button data-t=' + tStr + ' class="ad_copy">复制t串</button>'
+                            + '<textarea>' + monitor.join(' ') + '</textarea>'
+                        + '</div>');
+                }
+
+                var contentDom = document.createElement('div');
+                contentDom.innerHTML = itemHtml.join('');
+                art.dialog({
+                    title : pdps + '详情',
+                    lock : true,
+                    width : 500,
+                    content : contentDom
+                });
+                var copyBtns = contentDom.querySelectorAll('.ad_copy');
+                for (var i = copyBtns.length - 1; i >= 0; i--) {
+                    copyBtns[i].onmouseover = function () {
+                        clip.glue(this);
+                        clip.setText(this.getAttribute('tStr') || '');
+                    }
+                }
+            }
+            
         };
     }
 
