@@ -18,12 +18,12 @@ chrome.extension.onMessage.addListener(function (request, sender, sendResponse) 
         var cmd = request.cmd;
         if (cmd === 'complete') {
             addStyleFile(chrome.extension.getURL("aero.css"));
-            addStyleFile(chrome.extension.getURL("sinaadAssist.css"));
-            var js_arr = [chrome.extension.getURL("artDialog.js"), "http://fedeoo.github.io/accumulation/res/ZeroClipboard.min.js",
-                chrome.extension.getURL("sinaadAssist.js")];
-            // addStyleFile("http://d1.sina.com.cn/litong/zhitou/sinaads/zhitou/sinaadAssist.css");
+            // addStyleFile(chrome.extension.getURL("sinaadAssist.css"));
             // var js_arr = [chrome.extension.getURL("artDialog.js"), "http://d1.sina.com.cn/litong/zhitou/sinaads/zhitou/ZeroClipboard.min.js",
-            //     "http://d1.sina.com.cn/litong/zhitou/sinaads/zhitou/sinaadAssist.js"];
+            //     chrome.extension.getURL("sinaadAssist.js")];
+            addStyleFile("http://d1.sina.com.cn/litong/zhitou/sinaads/zhitou/dev/sinaadAssist.css");
+            var js_arr = [chrome.extension.getURL("artDialog.js"), "http://d1.sina.com.cn/litong/zhitou/sinaads/zhitou/ZeroClipboard.min.js",
+                "http://d1.sina.com.cn/litong/zhitou/sinaads/zhitou/dev/sinaadAssist.js"];
             var callback = function () {
                 var url = js_arr.shift();
                 if (url) { 
@@ -52,16 +52,11 @@ chrome.extension.onMessage.addListener(function (request, sender, sendResponse) 
 });
 
 function addBgmask() {
+    if (document.getElementById('bgmask')) {
+        return;
+    }
     var bgmask = document.createElement("div");  
     bgmask.setAttribute("id", "bgmask");  
-    bgmask.style.background = "#000";  
-    bgmask.style.width = "100%";  
-    bgmask.style.height = "20000px";  
-    bgmask.style.position = "absolute";  
-    bgmask.style.top = "0";  
-    bgmask.style.left = "0";  
-    bgmask.style.zIndex = "50";  
-    bgmask.style.opacity = "0.5"; 
     bgmask.style.display = "none";
     document.body.appendChild(bgmask); 
     document.addEventListener('keydown', function (event) {
@@ -71,15 +66,6 @@ function addBgmask() {
             cancleHighlightAd();
         }
     });
-    var style = document.createElement('style');
-    style.innerHTML = ".ad_highlight {"
-        + "position: relative;"
-        + "display: block;"
-        + "overflow: hidden;"
-        + "background: white;"
-        + "z-index: 51;"
-    + "}";
-    document.body.appendChild(style);
 }
 
 function highlightAd() {

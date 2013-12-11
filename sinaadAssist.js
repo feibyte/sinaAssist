@@ -3,10 +3,15 @@
     // window.onload = function () {
     //     init();
     // }
-    init();
     var floatBox;
+    var adListByOrder = [];
+    var adListByOrderMap = {};
+    var currentPdps;
+    init();
     function init () {
-
+        if (/(\.js|\.css)$/.test(location.href)) {//
+            return ;
+        }
         var adDoms = document.querySelectorAll('.sinaads') || [];
         for (var i = adDoms.length - 1; i >= 0; i--) {
             var pdps = adDoms[i].getAttribute('data-ad-pdps');
@@ -16,6 +21,7 @@
                     adDoms[i].onmouseover = getInsMouseOverHandler();
                     adDoms[i].onmouseout = getInsMouseOutHandler();
                 }
+                adListByOrder.push(pdps);
             }
         }
         loadClipboard();
@@ -26,8 +32,30 @@
                 cancleHighlightAd();
             } else if (event.keyCode === 72 && (event.ctrlKey || event.altKey)) {
                 highlightAd();
+            } else if (event.keyCode === 37) {//left
+                var index = adListByOrderMap[currentPdps] - 1 || 0;
+                index = index < 0 ? index + adListByOrder.length : index;
+                var dom = document.querySelector('[data-ad-pdps=' + adListByOrder[index] + ']');
+                changeFocus(dom);
+            } else if (event.keyCode === 39) {//right
+                var index = adListByOrderMap[currentPdps] + 1 || 0;
+                index = index >= adListByOrder.length ? 0 : index;
+                var dom = document.querySelector('[data-ad-pdps=' + adListByOrder[index] + ']');
+                changeFocus(dom);
             }
         });
+
+        adListByOrder.sort(function (a, b) {
+            var aDom = document.querySelector('[data-ad-pdps=' + a + ']');
+            var bDom = document.querySelector('[data-ad-pdps=' + b + ']');
+            var aoffset = sinaadToolkit.dom.getPosition(aDom);
+            var boffset = sinaadToolkit.dom.getPosition(bDom);
+            return (aoffset.top - boffset.top) * 1000 + (aoffset.left - boffset.left);//top优先排
+        });
+        for (var i = adListByOrder.length - 1; i >= 0; i--) {
+            adListByOrderMap[adListByOrder[i]] = i;
+        };
+
     }
     /**
      * [loadClipboard 载入剪贴板]
@@ -144,6 +172,7 @@
             var top = position.top;
             var floatBoxLeft = left;
             var floatBoxTop = top - 23;
+            floatBoxTop = floatBoxTop < 0 ? 0 : floatBoxTop;
             // var adWidth = this.offsetWidth;
             // var adHeight = this.offsetHeight;
             // var floatWidth = 514;
@@ -168,6 +197,7 @@
             // floatBox.style.visibility = 'visible';
             var a = floatBox.offsetHeight;
             // console.log(floatBox.offsetHeight); 
+            changeFocus(this);
         };
     }
     var timer;
@@ -218,21 +248,80 @@
                     content : contentDom
                 });
                 var copyBtns = contentDom.querySelectorAll('.ad_copy');
+                clip.glue(copyBtns);
                 for (var i = copyBtns.length - 1; i >= 0; i--) {
                     copyBtns[i].onmouseover = function () {
-                        clip.glue(this);
-                        clip.setText(this.getAttribute('tStr') || '');
+                        clip.setText(this.getAttribute('data-t') || '');
                     }
                 }
+            } else {
+                art.dialog({
+                    title : pdps + '详情',
+                    // lock : true,
+                    width : 500,
+                    content : '<div style="height:300px;overflow-y:scroll;">' + format(filter(JSON.stringify(data))) + '</div>'
+                });
             }
             
         };
     }
-
+    function format (jsondata) {
+        return jsondata.replace(/,/g, ',<br>')
+                .replace(/\{/g, '{<div class="nested-json">')
+                .replace(/\}/g, '</div>}');
+    }
+    function filter (str) {
+        return str.replace(/</g,'&lt;')
+                .replace(/>/g, '&gt;');
+    }
     function _getReplaceAdHandler () {
         return function (event) {
 
         };
     }
+
+    var DURATION = 150;
+    var ringElem = null;
+    var movingId = 0;
+    var prevFocused = null;
+    initialize();
+    function initialize () {
+        ringElem = document.createElement('flying-focus'); // use uniq element name to decrease the chances of a conflict with website styles
+        ringElem.id = 'flying-focus';
+        ringElem.style.transitionDuration = ringElem.style.WebkitTransitionDuration = DURATION / 1000 + 's';
+        document.body.appendChild(ringElem);
+    }
+    var screenHeight = screen.availHeight;
+    function changeFocus(target) {
+
+        currentPdps = target.getAttribute('data-ad-pdps')
+
+        var offset = sinaadToolkit.dom.getPosition(target);
+        ringElem.style.left = offset.left + 'px';
+        ringElem.style.top = offset.top + 'px';
+        ringElem.style.width = target.offsetWidth + 'px';
+        ringElem.style.height = target.offsetHeight + 'px';
+
+        onEnd();
+        target.classList.add('flying-focus_target');
+        ringElem.classList.add('flying-focus_visible');
+        prevFocused = target;
+        movingId = setTimeout(onEnd, DURATION);
+        var top = offset.top - (screenHeight - target.offsetHeight) / 2;
+        // var top = offset.top - (target.offsetHeight) / 2;
+        scrollTo(offset.left, top);
+    }
+
+    function onEnd() {
+        if (!movingId) {
+            return;
+        }
+        clearTimeout(movingId);
+        movingId = 0;
+        // ringElem.classList.remove('flying-focus_visible');
+        prevFocused.classList.remove('flying-focus_target');
+        prevFocused = null;
+    }
+
     
 })(window);
